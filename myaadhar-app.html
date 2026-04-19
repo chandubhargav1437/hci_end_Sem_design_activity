@@ -1,0 +1,2534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>MyAadhar — Digital Identity</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DESIGN SYSTEM — MyAadhar App
+   Colors Psychology: Blue=Trust, Green=Success, Red=Error
+   ============================================================ */
+:root {
+  --blue-900: #0a1628;
+  --blue-800: #0d2045;
+  --blue-700: #1a3a6b;
+  --blue-600: #1e4d94;
+  --blue-500: #2563c8;
+  --blue-400: #4080e0;
+  --blue-300: #7aaef0;
+  --blue-100: #ddeeff;
+  --blue-50:  #eef5ff;
+
+  --saffron:  #FF6B00;
+  --saffron-l:#FF8C2A;
+  --green-700:#15803d;
+  --green-500:#22c55e;
+  --green-100:#dcfce7;
+  --red-600:  #dc2626;
+  --red-100:  #fee2e2;
+  --amber-500:#f59e0b;
+  --amber-100:#fef3c7;
+
+  --neutral-900:#0f172a;
+  --neutral-700:#334155;
+  --neutral-500:#64748b;
+  --neutral-300:#cbd5e1;
+  --neutral-200:#e2e8f0;
+  --neutral-100:#f1f5f9;
+  --neutral-50: #f8fafc;
+  --white:      #ffffff;
+
+  --font-main: 'Noto Sans', sans-serif;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --shadow-sm: 0 2px 8px rgba(37,99,200,0.08);
+  --shadow-md: 0 4px 20px rgba(37,99,200,0.13);
+  --shadow-lg: 0 8px 32px rgba(37,99,200,0.18);
+  --transition: 0.22s cubic-bezier(.4,0,.2,1);
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: #1a1a2e; font-family: var(--font-main); }
+
+/* ============================================================
+   PHONE SHELL — Jakob's Law: familiar mobile chrome
+   ============================================================ */
+.phone-shell {
+  width: 390px;
+  height: 844px;
+  background: var(--neutral-50);
+  border-radius: 44px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.5), 0 0 0 10px #222, inset 0 0 0 2px #555;
+  display: flex;
+  flex-direction: column;
+  margin: 0 auto;
+}
+
+/* Status bar */
+.status-bar {
+  background: var(--blue-800);
+  padding: 14px 24px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+.status-bar .time { color: #fff; font-size: 13px; font-weight: 600; letter-spacing: 0.02em; }
+.status-bar .icons { display: flex; gap: 6px; align-items: center; }
+.status-bar .icons svg { width: 16px; height: 16px; fill: #fff; }
+
+/* Screen container — all screens stacked, JS toggles active */
+.screens {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition), transform var(--transition);
+  transform: translateX(30px);
+  background: var(--neutral-50);
+  overflow: hidden;
+}
+.screen.active {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateX(0);
+}
+
+/* Scrollable body inside each screen */
+.screen-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 8px;
+}
+.screen-body::-webkit-scrollbar { display: none; }
+
+/* ============================================================
+   BOTTOM NAV — Fitts' Law: large tap targets; Miller's: 4 items
+   Serial Position: key actions at ends (Home + Help)
+   ============================================================ */
+.bottom-nav {
+  background: var(--white);
+  border-top: 1px solid var(--neutral-200);
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+  padding: 0 4px;
+  box-shadow: 0 -4px 16px rgba(37,99,200,0.08);
+}
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 4px 14px;
+  gap: 4px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  transition: var(--transition);
+  border-top: 2.5px solid transparent;
+  min-height: 62px;
+  position: relative;
+}
+.nav-item.active { border-top-color: var(--blue-500); }
+.nav-item svg { width: 22px; height: 22px; transition: var(--transition); }
+.nav-item .nav-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--neutral-500);
+  transition: var(--transition);
+  letter-spacing: 0.01em;
+}
+.nav-item.active .nav-label { color: var(--blue-500); font-weight: 600; }
+.nav-item.active svg { filter: drop-shadow(0 2px 4px rgba(37,99,200,0.3)); }
+.nav-item:active { background: var(--blue-50); border-radius: var(--radius-sm); }
+
+/* ============================================================
+   COMMON COMPONENTS
+   ============================================================ */
+/* Top App Bar */
+.app-bar {
+  background: var(--blue-800);
+  padding: 14px 20px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.app-bar-title { color: #fff; font-size: 17px; font-weight: 600; flex: 1; }
+.app-bar-back {
+  width: 36px; height: 36px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+.app-bar-back:active { background: rgba(255,255,255,0.25); }
+.app-bar-action {
+  width: 36px; height: 36px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  transition: var(--transition);
+}
+
+/* Pill / Badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+.badge-success { background: var(--green-100); color: var(--green-700); }
+.badge-info    { background: var(--blue-100);  color: var(--blue-700);  }
+.badge-warning { background: var(--amber-100); color: #92400e; }
+.badge-error   { background: var(--red-100);   color: var(--red-600);   }
+
+/* Card */
+.card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+.card:active { box-shadow: var(--shadow-md); transform: scale(0.985); }
+
+/* Section label */
+.section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--neutral-500);
+  margin: 0 20px 10px;
+}
+
+/* Primary Button — Fitts': full-width, tall */
+.btn-primary {
+  width: 100%;
+  padding: 16px;
+  background: var(--blue-500);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 54px;
+}
+.btn-primary:active { background: var(--blue-600); transform: scale(0.98); }
+.btn-secondary {
+  width: 100%;
+  padding: 15px;
+  background: transparent;
+  color: var(--blue-500);
+  border: 1.5px solid var(--blue-300);
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  min-height: 54px;
+}
+.btn-secondary:active { background: var(--blue-50); }
+
+/* Input field */
+.input-group { display: flex; flex-direction: column; gap: 6px; }
+.input-label { font-size: 12px; font-weight: 600; color: var(--neutral-700); letter-spacing: 0.02em; }
+.input-field {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1.5px solid var(--neutral-200);
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-family: var(--font-main);
+  color: var(--neutral-900);
+  background: var(--white);
+  transition: var(--transition);
+  outline: none;
+}
+.input-field:focus { border-color: var(--blue-400); box-shadow: 0 0 0 3px rgba(37,99,200,0.12); }
+.input-hint { font-size: 11px; color: var(--neutral-500); }
+.input-error { font-size: 11px; color: var(--red-600); }
+
+/* Toast notification */
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--neutral-900);
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(.4,0,.2,1);
+  white-space: nowrap;
+  z-index: 999;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: var(--shadow-lg);
+  max-width: 340px;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.success { background: var(--green-700); }
+.toast.error   { background: var(--red-600); }
+
+/* ============================================================
+   SCREEN 1 — SPLASH / ONBOARDING
+   Authority (Gov branding), Trust (blue), Saffron accent
+   ============================================================ */
+#screen-splash {
+  background: linear-gradient(160deg, var(--blue-900) 0%, var(--blue-700) 60%, var(--blue-800) 100%);
+}
+.splash-emblem {
+  width: 80px; height: 80px;
+  background: var(--white);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 16px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+  overflow: hidden;
+}
+.splash-emblem img { width: 64px; height: 64px; object-fit: contain; }
+.splash-tricolor {
+  height: 4px;
+  background: linear-gradient(90deg, var(--saffron) 33%, #fff 33%, #fff 66%, #138808 66%);
+  border-radius: 2px;
+  width: 60px;
+  margin: 0 auto 12px;
+}
+
+/* ============================================================
+   SCREEN 2 — LOGIN
+   OTP-first: Hick's Law, Principle of Least Effort
+   ============================================================ */
+#screen-login {}
+.login-header {
+  background: var(--blue-800);
+  padding: 32px 24px 28px;
+  text-align: center;
+}
+.login-logo {
+  width: 56px; height: 56px;
+  background: var(--white);
+  border-radius: 16px;
+  margin: 0 auto 12px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--shadow-md);
+}
+.login-logo-text { font-size: 18px; font-weight: 800; color: var(--blue-700); letter-spacing: -0.5px; }
+
+/* OTP grid — big Fitts targets */
+.otp-grid {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin: 12px 0;
+}
+.otp-cell {
+  width: 48px; height: 56px;
+  border: 2px solid var(--neutral-200);
+  border-radius: var(--radius-md);
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--neutral-900);
+  background: var(--white);
+  outline: none;
+  transition: var(--transition);
+}
+.otp-cell:focus { border-color: var(--blue-400); box-shadow: 0 0 0 3px rgba(37,99,200,0.15); }
+
+/* ============================================================
+   SCREEN 3 — HOME DASHBOARD
+   Inverted Pyramid, Serial Position, Pareto Top-3
+   F-Pattern layout, Mental Models (DigiLocker-like)
+   ============================================================ */
+#screen-home {}
+.home-header {
+  background: linear-gradient(150deg, var(--blue-800) 0%, var(--blue-600) 100%);
+  padding: 16px 20px 28px;
+  position: relative;
+  overflow: hidden;
+}
+.home-header::before {
+  content: '';
+  position: absolute;
+  right: -30px; top: -30px;
+  width: 200px; height: 200px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 50%;
+}
+.home-greeting { font-size: 12px; color: rgba(255,255,255,0.7); font-weight: 400; margin-bottom: 2px; }
+.home-name     { font-size: 20px; color: #fff; font-weight: 700; }
+.home-aadhaar-card {
+  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  margin-top: 14px;
+  backdrop-filter: blur(8px);
+}
+.aadhaar-card-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.aadhaar-uid {
+  font-size: 18px; font-weight: 700; color: #fff;
+  letter-spacing: 2px;
+  font-variant-numeric: tabular-nums;
+}
+.aadhaar-uid span { opacity: 0.5; }
+
+/* Top 3 Quick Actions — Pareto: 80% of use cases */
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 0 16px;
+  margin-top: -18px;
+  position: relative;
+  z-index: 2;
+}
+.quick-action {
+  background: var(--white);
+  border-radius: var(--radius-md);
+  padding: 14px 10px;
+  display: flex; flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  border: none;
+  transition: var(--transition);
+  text-align: center;
+}
+.quick-action:active { transform: scale(0.95); box-shadow: var(--shadow-sm); }
+.quick-action-icon {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+}
+.qa-blue  { background: var(--blue-100);  }
+.qa-green { background: var(--green-100); }
+.qa-amber { background: var(--amber-100); }
+.quick-action-label { font-size: 11px; font-weight: 600; color: var(--neutral-700); line-height: 1.3; }
+
+/* Services Grid — Miller's: 8 services max, Gestalt Proximity/Similarity */
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 0 16px;
+}
+.service-item {
+  display: flex; flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 6px;
+  background: var(--white);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  border: none;
+  transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+}
+.service-item:active { background: var(--blue-50); transform: scale(0.95); }
+.service-icon {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.service-label { font-size: 10px; font-weight: 600; color: var(--neutral-700); text-align: center; line-height: 1.3; }
+
+/* Recent activity */
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--white);
+  margin: 0 16px 8px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.activity-item:active { background: var(--neutral-50); }
+.activity-icon {
+  width: 40px; height: 40px; flex-shrink: 0;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}
+.activity-text { flex: 1; min-width: 0; }
+.activity-title { font-size: 13px; font-weight: 600; color: var(--neutral-900); }
+.activity-sub   { font-size: 11px; color: var(--neutral-500); margin-top: 2px; }
+.activity-time  { font-size: 11px; color: var(--neutral-400); flex-shrink: 0; }
+
+/* ============================================================
+   SCREEN 4 — PROFILE
+   Norman's Visibility, Closure, Gestalt Common Region
+   ============================================================ */
+#screen-profile {}
+.profile-header {
+  background: linear-gradient(150deg, var(--blue-800), var(--blue-600));
+  padding: 20px 20px 36px;
+  text-align: center;
+}
+.profile-avatar {
+  width: 72px; height: 72px;
+  background: linear-gradient(135deg, var(--blue-300), var(--blue-500));
+  border-radius: 50%;
+  margin: 0 auto 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  border: 3px solid rgba(255,255,255,0.3);
+  position: relative;
+}
+.profile-edit-btn {
+  position: absolute;
+  bottom: -2px; right: -2px;
+  width: 24px; height: 24px;
+  background: var(--saffron);
+  border-radius: 50%;
+  border: none;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+.profile-name   { font-size: 20px; font-weight: 700; color: #fff; }
+.profile-uid    { font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 4px; letter-spacing: 1px; }
+
+.profile-card {
+  background: var(--white);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  margin-top: -18px;
+  padding: 20px;
+  min-height: 400px;
+}
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--neutral-100);
+}
+.info-row:last-child { border-bottom: none; }
+.info-key   { font-size: 12px; color: var(--neutral-500); font-weight: 500; }
+.info-value { font-size: 13px; color: var(--neutral-900); font-weight: 600; text-align: right; max-width: 55%; }
+.info-value.masked { letter-spacing: 3px; color: var(--neutral-400); }
+
+/* Biometric status cards */
+.bio-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 14px 0;
+}
+.bio-card {
+  background: var(--neutral-50);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  display: flex; flex-direction: column; gap: 8px;
+  border: 1px solid var(--neutral-200);
+}
+.bio-card-title { font-size: 11px; color: var(--neutral-500); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+.bio-status-row { display: flex; align-items: center; gap: 6px; }
+.bio-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.bio-dot.active   { background: var(--green-500); box-shadow: 0 0 0 3px var(--green-100); }
+.bio-dot.inactive { background: var(--neutral-300); }
+.bio-label { font-size: 12px; color: var(--neutral-700); font-weight: 500; }
+
+/* ============================================================
+   SCREEN 5 — SERVICES
+   Alphabetical sorting, Zipf's Law prioritization
+   Miller's: grouped ≤7 per section
+   ============================================================ */
+#screen-services {}
+.services-search {
+  margin: 12px 16px 0;
+  position: relative;
+}
+.services-search input {
+  width: 100%;
+  padding: 12px 16px 12px 44px;
+  border: 1.5px solid var(--neutral-200);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  background: var(--white);
+  outline: none;
+  font-family: var(--font-main);
+  transition: var(--transition);
+}
+.services-search input:focus { border-color: var(--blue-400); box-shadow: 0 0 0 3px rgba(37,99,200,0.12); }
+.services-search-icon {
+  position: absolute;
+  left: 12px; top: 50%; transform: translateY(-50%);
+  color: var(--neutral-400);
+  pointer-events: none;
+}
+
+/* Filter chips — Hick's Law: reduce cognitive load */
+.filter-chips {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.filter-chips::-webkit-scrollbar { display: none; }
+.chip {
+  padding: 6px 14px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1.5px solid var(--neutral-200);
+  background: var(--white);
+  cursor: pointer;
+  color: var(--neutral-600);
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+.chip.active { background: var(--blue-500); color: #fff; border-color: var(--blue-500); }
+
+.service-list-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--white);
+  margin: 0 16px 8px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  border: none;
+  width: calc(100% - 32px);
+  text-align: left;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+.service-list-item:active { background: var(--blue-50); }
+.service-list-icon {
+  width: 44px; height: 44px; flex-shrink: 0;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+}
+.service-list-text { flex: 1; }
+.service-list-title { font-size: 14px; font-weight: 600; color: var(--neutral-900); }
+.service-list-desc  { font-size: 12px; color: var(--neutral-500); margin-top: 2px; }
+.service-list-arrow { color: var(--neutral-300); }
+
+/* ============================================================
+   SCREEN 6 — ADDRESS UPDATE
+   Constraint-based form, Error prevention, Reset/Cancel guidelines
+   ============================================================ */
+#screen-update {}
+.form-section {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin: 0 16px 12px;
+  box-shadow: var(--shadow-sm);
+}
+.form-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--blue-700);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.step-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 16px 20px 8px;
+}
+.step {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  flex: 1;
+  position: relative;
+}
+.step::after {
+  content: '';
+  position: absolute;
+  top: 14px; left: calc(50% + 14px);
+  right: calc(-50% + 14px);
+  height: 2px;
+  background: var(--neutral-200);
+}
+.step:last-child::after { display: none; }
+.step-dot {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--neutral-200);
+  background: var(--white);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  color: var(--neutral-400);
+  z-index: 1;
+}
+.step.done .step-dot  { background: var(--green-500); border-color: var(--green-500); color: #fff; }
+.step.active .step-dot{ background: var(--blue-500); border-color: var(--blue-500); color: #fff; }
+.step.done::after  { background: var(--green-500); }
+.step.active::after{ background: var(--blue-300); }
+.step-name { font-size: 10px; color: var(--neutral-500); font-weight: 500; }
+.step.active .step-name { color: var(--blue-500); font-weight: 700; }
+
+.select-field {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1.5px solid var(--neutral-200);
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-family: var(--font-main);
+  color: var(--neutral-900);
+  background: var(--white);
+  outline: none;
+  transition: var(--transition);
+  appearance: none;
+  cursor: pointer;
+}
+.select-field:focus { border-color: var(--blue-400); box-shadow: 0 0 0 3px rgba(37,99,200,0.12); }
+
+/* ============================================================
+   SCREEN 7 — e-AADHAAR DOWNLOAD
+   Closure (progress), Reciprocity, Feedback
+   ============================================================ */
+#screen-download {}
+.download-card {
+  background: linear-gradient(135deg, var(--blue-800), var(--blue-600));
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  margin: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.download-card::before {
+  content: '';
+  position: absolute;
+  right: -40px; bottom: -40px;
+  width: 160px; height: 160px;
+  background: rgba(255,255,255,0.07);
+  border-radius: 50%;
+}
+.download-card-title { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+.download-card-sub   { font-size: 12px; color: rgba(255,255,255,0.7); margin-bottom: 20px; }
+.aadhaar-preview {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex; align-items: center; gap: 14px;
+  backdrop-filter: blur(4px);
+}
+.aadhaar-preview-img {
+  width: 56px; height: 40px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+}
+.aadhaar-preview-text { color: #fff; }
+.aadhaar-preview-name { font-size: 14px; font-weight: 600; }
+.aadhaar-preview-uid  { font-size: 12px; opacity: 0.7; letter-spacing: 1px; margin-top: 2px; }
+
+.download-options { padding: 0 16px; display: flex; flex-direction: column; gap: 10px; }
+.download-option {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px;
+  background: var(--white);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  border: 1.5px solid var(--neutral-200);
+  transition: var(--transition);
+}
+.download-option:active { border-color: var(--blue-400); background: var(--blue-50); }
+.download-option.selected { border-color: var(--blue-500); background: var(--blue-50); }
+.download-option-icon {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.download-option-text { flex: 1; }
+.download-option-title { font-size: 14px; font-weight: 600; color: var(--neutral-900); }
+.download-option-sub   { font-size: 12px; color: var(--neutral-500); margin-top: 2px; }
+.radio-outer {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--neutral-300);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: var(--transition);
+}
+.download-option.selected .radio-outer { border-color: var(--blue-500); }
+.radio-inner {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--blue-500);
+  opacity: 0;
+  transition: var(--transition);
+}
+.download-option.selected .radio-inner { opacity: 1; }
+
+/* Password input with mask toggle */
+.input-password-wrap { position: relative; }
+.input-password-wrap .input-field { padding-right: 48px; }
+.toggle-mask {
+  position: absolute;
+  right: 14px; top: 50%; transform: translateY(-50%);
+  border: none; background: transparent; cursor: pointer; color: var(--neutral-500);
+  padding: 4px;
+}
+
+/* ============================================================
+   SCREEN 8 — AUTH HISTORY
+   Feedback, Visibility, Recency (newest first)
+   ============================================================ */
+#screen-history {}
+.history-filter {
+  display: flex; gap: 8px;
+  padding: 12px 16px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.history-filter::-webkit-scrollbar { display: none; }
+
+.history-item {
+  padding: 14px 16px;
+  background: var(--white);
+  margin: 0 16px 8px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  display: flex; align-items: flex-start; gap: 12px;
+  cursor: pointer;
+  transition: var(--transition);
+  border-left: 3px solid transparent;
+}
+.history-item.auth-success { border-left-color: var(--green-500); }
+.history-item.auth-fail    { border-left-color: var(--red-600); }
+.history-item.auth-info    { border-left-color: var(--blue-400); }
+.history-icon {
+  width: 36px; height: 36px; flex-shrink: 0;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}
+.history-text { flex: 1; min-width: 0; }
+.history-title { font-size: 13px; font-weight: 600; color: var(--neutral-900); }
+.history-sub   { font-size: 11px; color: var(--neutral-500); margin-top: 3px; }
+.history-meta  { font-size: 10px; color: var(--neutral-400); margin-top: 6px; display: flex; gap: 10px; flex-wrap: wrap; }
+.history-meta span { display: flex; align-items: center; gap: 3px; }
+
+/* ============================================================
+   SCREEN 9 — HELP CENTER
+   Principle of Least Effort, User Support, FAQ
+   Recency: common issues first (Zipf's Law)
+   ============================================================ */
+#screen-help {}
+.help-hero {
+  background: linear-gradient(150deg, var(--blue-800), var(--blue-600));
+  padding: 20px 20px 32px;
+  text-align: center;
+}
+.help-hero-title { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+.help-hero-sub   { font-size: 12px; color: rgba(255,255,255,0.7); margin-bottom: 16px; }
+.help-search {
+  position: relative;
+}
+.help-search input {
+  width: 100%;
+  padding: 13px 16px 13px 44px;
+  border-radius: var(--radius-md);
+  border: none;
+  font-size: 14px;
+  font-family: var(--font-main);
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  outline: none;
+  backdrop-filter: blur(4px);
+}
+.help-search input::placeholder { color: rgba(255,255,255,0.6); }
+.help-search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.7); }
+
+.faq-item {
+  background: var(--white);
+  margin: 0 16px 8px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.faq-header {
+  padding: 14px 16px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  border: none; background: transparent; width: 100%; text-align: left; cursor: pointer;
+}
+.faq-question { font-size: 13px; font-weight: 600; color: var(--neutral-900); flex: 1; }
+.faq-chevron  { color: var(--neutral-400); transition: var(--transition); flex-shrink: 0; }
+.faq-item.open .faq-chevron { transform: rotate(180deg); }
+.faq-answer {
+  padding: 0 16px;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, padding 0.3s ease;
+}
+.faq-item.open .faq-answer { max-height: 200px; padding: 0 16px 14px; }
+.faq-answer p { font-size: 12px; color: var(--neutral-600); line-height: 1.6; }
+
+.contact-card {
+  background: var(--white);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin: 0 16px 8px;
+  display: flex; align-items: center; gap: 14px;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.contact-card:active { background: var(--blue-50); }
+.contact-icon {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+}
+.contact-text { flex: 1; }
+.contact-title { font-size: 14px; font-weight: 600; color: var(--neutral-900); }
+.contact-sub   { font-size: 12px; color: var(--neutral-500); margin-top: 2px; }
+
+/* ============================================================
+   SCREEN 10 — SETTINGS (Accessibility, Language)
+   Universal Design, High Contrast, Voice
+   ============================================================ */
+#screen-settings {}
+.settings-section { margin-bottom: 8px; }
+.settings-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px;
+  background: var(--white);
+  margin: 0 16px 1px;
+  cursor: pointer;
+  border: none; width: calc(100% - 32px); text-align: left;
+  transition: var(--transition);
+}
+.settings-item:first-child { border-radius: var(--radius-md) var(--radius-md) 0 0; }
+.settings-item:last-child  { border-radius: 0 0 var(--radius-md) var(--radius-md); margin-bottom: 0; }
+.settings-item:only-child  { border-radius: var(--radius-md); }
+.settings-item:active { background: var(--blue-50); }
+.settings-item-icon {
+  width: 36px; height: 36px; flex-shrink: 0;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.settings-item-text { flex: 1; }
+.settings-item-title { font-size: 14px; font-weight: 600; color: var(--neutral-900); }
+.settings-item-sub   { font-size: 12px; color: var(--neutral-500); margin-top: 1px; }
+.settings-item-right { color: var(--neutral-300); }
+
+/* Toggle switch — Power Law of Practice: muscle memory */
+.toggle-switch {
+  width: 44px; height: 26px;
+  background: var(--neutral-200);
+  border-radius: 13px;
+  position: relative;
+  cursor: pointer;
+  transition: var(--transition);
+  flex-shrink: 0;
+  border: none;
+}
+.toggle-switch.on { background: var(--blue-500); }
+.toggle-thumb {
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 20px; height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  transition: var(--transition);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+.toggle-switch.on .toggle-thumb { left: 21px; }
+
+/* Language selector */
+.lang-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 0 16px;
+  margin: 8px 0;
+}
+.lang-btn {
+  padding: 10px 8px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--neutral-200);
+  background: var(--white);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--neutral-700);
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: center;
+}
+.lang-btn.active { background: var(--blue-50); border-color: var(--blue-400); color: var(--blue-700); }
+.lang-btn:active { transform: scale(0.95); }
+
+/* ============================================================
+   PROGRESS / LOADING — Feedback (Shneiderman)
+   ============================================================ */
+.progress-bar {
+  height: 4px;
+  background: var(--neutral-100);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--blue-500);
+  border-radius: 2px;
+  transition: width 0.5s cubic-bezier(.4,0,.2,1);
+}
+.spinner {
+  width: 24px; height: 24px;
+  border: 3px solid var(--blue-100);
+  border-top-color: var(--blue-500);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ============================================================
+   ALERT BANNER — Error prevention (Norman/Nielsen)
+   ============================================================ */
+.alert-banner {
+  margin: 8px 16px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.alert-banner.info    { background: var(--blue-50);  color: var(--blue-800);  border: 1px solid var(--blue-200);  }
+.alert-banner.success { background: var(--green-100); color: var(--green-700); border: 1px solid #86efac; }
+.alert-banner.warning { background: var(--amber-100); color: #92400e;          border: 1px solid #fcd34d; }
+.alert-banner.error   { background: var(--red-100);   color: var(--red-600);   border: 1px solid #fca5a5; }
+.alert-banner-icon { font-size: 16px; flex-shrink: 0; margin-top: -1px; }
+.alert-banner-text { flex: 1; }
+.alert-banner-title { font-weight: 700; margin-bottom: 2px; }
+
+/* ============================================================
+   DIVIDER
+   ============================================================ */
+.divider { height: 1px; background: var(--neutral-100); margin: 4px 0; }
+.spacer-sm { height: 8px; }
+.spacer-md { height: 16px; }
+.spacer-lg { height: 24px; }
+
+/* ============================================================
+   HCI MAP PANEL — shown as a floating reference overlay
+   ============================================================ */
+.hci-map-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(10,22,40,0.85);
+  z-index: 9999;
+  overflow-y: auto;
+  padding: 20px;
+}
+.hci-map-overlay.show { display: block; }
+.hci-map-panel {
+  background: var(--white);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+.hci-map-panel h2 { font-size: 20px; font-weight: 800; color: var(--blue-800); margin-bottom: 4px; }
+.hci-map-panel p.sub { font-size: 12px; color: var(--neutral-500); margin-bottom: 20px; }
+.hci-law-row {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--neutral-100);
+}
+.hci-law-row:last-child { border-bottom: none; }
+.hci-law-tag {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--blue-100);
+  color: var(--blue-700);
+  letter-spacing: 0.03em;
+}
+.hci-law-desc { font-size: 12px; color: var(--neutral-700); line-height: 1.6; }
+.hci-law-desc strong { color: var(--neutral-900); }
+.hci-close {
+  position: sticky; top: 0;
+  float: right;
+  background: var(--blue-500);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 1;
+}
+
+/* ============================================================
+   DEMO CONTROLS BAR (external to phone)
+   ============================================================ */
+.demo-controls {
+  text-align: center;
+  padding: 16px;
+}
+.demo-label {
+  color: rgba(255,255,255,0.5);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.demo-btn {
+  display: inline-block;
+  padding: 8px 18px;
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.8);
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.15);
+  margin: 4px;
+  transition: var(--transition);
+}
+.demo-btn:hover { background: rgba(255,255,255,0.2); }
+
+/* ============================================================
+   FULL PAGE LAYOUT
+   ============================================================ */
+.page-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 32px 16px;
+  background: radial-gradient(ellipse at 20% 10%, #1a3060 0%, #0a1628 60%);
+}
+.page-title {
+  color: rgba(255,255,255,0.9);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  display: flex; align-items: center; gap: 10px;
+}
+.page-title::before, .page-title::after {
+  content: '';
+  flex: 1; max-width: 60px;
+  height: 1px;
+  background: rgba(255,255,255,0.2);
+}
+</style>
+</head>
+<body>
+<div class="page-wrapper">
+  <div class="page-title">MyAadhar App — HCI Design System</div>
+
+  <!-- PHONE SHELL -->
+  <div class="phone-shell">
+    <!-- STATUS BAR -->
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <div class="icons">
+        <svg viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3a4.237 4.237 0 0 0-6 0zm-4-4l2 2a7.074 7.074 0 0 1 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+      </div>
+    </div>
+
+    <!-- SCREENS CONTAINER -->
+    <div class="screens">
+
+      <!-- ======================================================
+           SCREEN: SPLASH
+           ====================================================== -->
+      <div class="screen active" id="screen-splash">
+        <div class="screen-body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:40px 32px;background:linear-gradient(160deg,#0a1628 0%,#1a3a6b 60%,#0d2045 100%);">
+          <div style="text-align:center;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;">
+            <!-- Emblem — Authority, Trust -->
+            <div class="splash-emblem">
+              <svg viewBox="0 0 64 64" width="54" height="54">
+                <circle cx="32" cy="32" r="30" fill="#1e4d94"/>
+                <circle cx="32" cy="32" r="24" fill="none" stroke="#7aaef0" stroke-width="1.5"/>
+                <circle cx="32" cy="32" r="6" fill="#FF6B00"/>
+                <!-- Spokes -->
+                <g stroke="#7aaef0" stroke-width="1.5">
+                  <line x1="32" y1="8" x2="32" y2="14"/>
+                  <line x1="32" y1="50" x2="32" y2="56"/>
+                  <line x1="8" y1="32" x2="14" y2="32"/>
+                  <line x1="50" y1="32" x2="56" y2="32"/>
+                  <line x1="14.4" y1="14.4" x2="18.7" y2="18.7"/>
+                  <line x1="45.3" y1="45.3" x2="49.6" y2="49.6"/>
+                  <line x1="49.6" y1="14.4" x2="45.3" y2="18.7"/>
+                  <line x1="18.7" y1="45.3" x2="14.4" y2="49.6"/>
+                  <line x1="20" y1="8.4" x2="21.6" y2="14.1"/>
+                  <line x1="42.4" y1="49.9" x2="44" y2="55.6"/>
+                  <line x1="8.4" y1="20" x2="14.1" y2="21.6"/>
+                  <line x1="49.9" y1="42.4" x2="55.6" y2="44"/>
+                  <line x1="44" y1="8.4" x2="42.4" y2="14.1"/>
+                  <line x1="21.6" y1="49.9" x2="20" y2="55.6"/>
+                  <line x1="55.6" y1="20" x2="49.9" y2="21.6"/>
+                  <line x1="14.1" y1="42.4" x2="8.4" y2="44"/>
+                </g>
+                <text x="32" y="36" text-anchor="middle" fill="#fff" font-size="8" font-weight="700" font-family="sans-serif">UIDAI</text>
+              </svg>
+            </div>
+            <div class="splash-tricolor"></div>
+            <div style="font-size:28px;font-weight:800;color:#fff;letter-spacing:-0.5px;margin-bottom:4px;">MyAadhar</div>
+            <div style="font-size:13px;color:rgba(255,255,255,0.6);margin-bottom:6px;">Unique Identification Authority of India</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.4);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:48px;">Digital Identity Platform</div>
+
+            <!-- Tagline badges — Social Proof, Authority -->
+            <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:48px;">
+              <div class="badge badge-info">🔒 ISO 27001 Certified</div>
+              <div class="badge badge-success">✅ 1.3B+ Users</div>
+              <div class="badge" style="background:rgba(255,107,0,0.15);color:#FF8C2A;">🏛️ Govt. of India</div>
+            </div>
+          </div>
+          <!-- CTA — Fitts' Law: large, prominent -->
+          <div style="width:100%;padding:0 8px;">
+            <button class="btn-primary" onclick="showScreen('login')" style="background:linear-gradient(90deg,#2563c8,#4080e0);box-shadow:0 8px 24px rgba(37,99,200,0.4);">
+              🇮🇳 &nbsp; Get Started
+            </button>
+            <div style="text-align:center;margin-top:14px;font-size:12px;color:rgba(255,255,255,0.4);">Secure • Private • Trusted</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================================================
+           SCREEN: LOGIN
+           OTP-first flow — Hick's Law, Least Effort
+           ====================================================== -->
+      <div class="screen" id="screen-login">
+        <div class="login-header">
+          <div class="login-logo"><span class="login-logo-text">मA</span></div>
+          <div style="color:#fff;font-size:18px;font-weight:700;">Secure Login</div>
+          <div style="color:rgba(255,255,255,0.6);font-size:12px;margin-top:4px;">Enter your registered mobile number</div>
+        </div>
+        <div class="screen-body" style="background:var(--neutral-50);">
+          <div style="padding:20px 20px 0;">
+            <!-- Step indicator — Closure/Progress -->
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:24px;">
+              <div style="width:28px;height:28px;border-radius:50%;background:var(--blue-500);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;">1</div>
+              <div style="flex:1;height:2px;background:var(--neutral-200);border-radius:2px;"><div style="width:0%;height:100%;background:var(--blue-500);border-radius:2px;"></div></div>
+              <div style="width:28px;height:28px;border-radius:50%;background:var(--neutral-200);display:flex;align-items:center;justify-content:center;color:var(--neutral-500);font-size:12px;font-weight:700;">2</div>
+              <div style="flex:1;height:2px;background:var(--neutral-200);border-radius:2px;"></div>
+              <div style="width:28px;height:28px;border-radius:50%;background:var(--neutral-200);display:flex;align-items:center;justify-content:center;color:var(--neutral-500);font-size:12px;font-weight:700;">3</div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--neutral-400);font-weight:600;margin-bottom:24px;margin-top:-18px;padding:0 2px;">
+              <span style="color:var(--blue-500);">Mobile</span><span style="flex:1;"></span><span>OTP</span><span style="flex:1;"></span><span>Aadhaar</span>
+            </div>
+
+            <div class="input-group" style="margin-bottom:16px;">
+              <div class="input-label">Mobile Number</div>
+              <div style="position:relative;">
+                <div style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:14px;font-weight:600;color:var(--neutral-600);">+91</div>
+                <input class="input-field" style="padding-left:46px;" placeholder="98765 43210" maxlength="10" type="tel" id="login-mobile">
+              </div>
+              <div class="input-hint">📱 OTP will be sent to this number</div>
+            </div>
+
+            <!-- Aadhaar number — Password masking guideline -->
+            <div class="input-group" style="margin-bottom:20px;">
+              <div class="input-label">Aadhaar Number (last 4 digits)</div>
+              <div class="input-password-wrap">
+                <input class="input-field" id="login-uid" placeholder="XXXX XXXX 1234" maxlength="14" type="password">
+                <button class="toggle-mask" onclick="toggleMask('login-uid', this)">👁</button>
+              </div>
+              <div class="input-hint">🔒 Your Aadhaar number is encrypted</div>
+            </div>
+
+            <!-- Error prevention: CAPTCHA notice -->
+            <div class="alert-banner info" style="margin:0 0 16px;">
+              <span class="alert-banner-icon">🛡️</span>
+              <div class="alert-banner-text">
+                <div class="alert-banner-title">Privacy Notice</div>
+                This app never stores your biometric data on device.
+              </div>
+            </div>
+
+            <button class="btn-primary" onclick="simulateOTP()" style="margin-bottom:12px;">
+              <span>Send OTP</span>
+              <span>→</span>
+            </button>
+            <button class="btn-secondary" onclick="showScreen('home')">Skip (Demo)</button>
+          </div>
+          <div class="spacer-md"></div>
+          <!-- Biometric login shortcut — Power Law of Practice -->
+          <div style="text-align:center;padding:0 20px 16px;">
+            <div style="font-size:12px;color:var(--neutral-400);margin-bottom:12px;">— OR —</div>
+            <button style="background:var(--neutral-100);border:none;border-radius:var(--radius-md);padding:14px 28px;font-size:14px;font-weight:600;color:var(--neutral-700);cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;" onclick="showToast('Biometric authentication initiated…','info')">
+              🫆 &nbsp; Login with Fingerprint / Face ID
+            </button>
+          </div>
+          <div style="text-align:center;font-size:11px;color:var(--neutral-400);padding:0 20px 20px;">By continuing, you agree to UIDAI's Terms of Service and Privacy Policy</div>
+        </div>
+      </div>
+
+      <!-- ======================================================
+           SCREEN: HOME DASHBOARD
+           Inverted Pyramid, Pareto Top-3, F-Pattern
+           ====================================================== -->
+      <div class="screen" id="screen-home">
+        <!-- Home Header with mini Aadhaar card -->
+        <div class="home-header">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div>
+              <div class="home-greeting">Good Morning,</div>
+              <div class="home-name">Rahul Kumar 👋</div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="app-bar-action" onclick="showScreen('settings')">⚙️</button>
+              <button class="app-bar-action" onclick="showScreen('help')" style="position:relative;">
+                🔔
+                <span style="position:absolute;top:4px;right:4px;width:8px;height:8px;background:#ef4444;border-radius:50%;border:1.5px solid var(--blue-600);"></span>
+              </button>
+            </div>
+          </div>
+          <!-- Mini Aadhaar Card — Closure, Gestalt -->
+          <div class="home-aadhaar-card">
+            <div class="aadhaar-card-row">
+              <div>
+                <div style="font-size:10px;color:rgba(255,255,255,0.6);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Aadhaar Number</div>
+                <div class="aadhaar-uid"><span>XXXX XXXX</span> 5678</div>
+              </div>
+              <div class="badge badge-success" style="align-self:flex-start;">✓ Verified</div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div style="font-size:12px;color:rgba(255,255,255,0.6);">Rahul Kumar · DOB: 15/08/1995</div>
+              <button style="background:rgba(255,255,255,0.15);border:none;border-radius:8px;padding:6px 12px;color:#fff;font-size:11px;font-weight:600;cursor:pointer;" onclick="showToast('e-Aadhaar downloaded!','success')">Download PDF</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="screen-body">
+          <!-- TOP 3 QUICK ACTIONS — Pareto 80-20: Download, Update, Verify -->
+          <!-- Primality: shown first; Fitts': large cards; Hick's: only 3 -->
+          <div class="quick-actions">
+            <button class="quick-action" onclick="showScreen('download')">
+              <div class="quick-action-icon qa-blue"><span style="font-size:22px;">📄</span></div>
+              <div class="quick-action-label">Download e-Aadhaar</div>
+            </button>
+            <button class="quick-action" onclick="showScreen('update')">
+              <div class="quick-action-icon qa-amber"><span style="font-size:22px;">✏️</span></div>
+              <div class="quick-action-label">Update Address</div>
+            </button>
+            <button class="quick-action" onclick="showScreen('history')">
+              <div class="quick-action-icon qa-green"><span style="font-size:22px;">🔍</span></div>
+              <div class="quick-action-label">Auth History</div>
+            </button>
+          </div>
+
+          <!-- Status Banner — Visibility of System Status (Nielsen) -->
+          <div class="spacer-sm"></div>
+          <div class="alert-banner success" style="margin:8px 16px;">
+            <span class="alert-banner-icon">✅</span>
+            <div class="alert-banner-text">
+              <div class="alert-banner-title">Profile Complete</div>
+              All biometrics registered · Last updated 3 months ago
+            </div>
+          </div>
+
+          <!-- ALL SERVICES — Miller's 7±2, Gestalt Proximity/Similarity -->
+          <div class="spacer-sm"></div>
+          <div class="section-label">All Services</div>
+          <!-- Gestalt: grouped by Common Region -->
+          <div class="services-grid">
+            <button class="service-item" onclick="showScreen('profile')">
+              <div class="service-icon" style="background:#eff6ff;">👤</div>
+              <div class="service-label">My Profile</div>
+            </button>
+            <button class="service-item" onclick="showScreen('download')">
+              <div class="service-icon" style="background:#f0fdf4;">📄</div>
+              <div class="service-label">e-Aadhaar</div>
+            </button>
+            <button class="service-item" onclick="showScreen('update')">
+              <div class="service-icon" style="background:#fffbeb;">📍</div>
+              <div class="service-label">Address</div>
+            </button>
+            <button class="service-item" onclick="showScreen('services')">
+              <div class="service-icon" style="background:#fdf4ff;">🛡️</div>
+              <div class="service-label">Lock/Unlock</div>
+            </button>
+            <button class="service-item" onclick="showScreen('history')">
+              <div class="service-icon" style="background:#fff7ed;">🕐</div>
+              <div class="service-label">Auth Log</div>
+            </button>
+            <button class="service-item" onclick="showScreen('services')">
+              <div class="service-icon" style="background:#f0fdf4;">📱</div>
+              <div class="service-label">VID</div>
+            </button>
+            <button class="service-item" onclick="showScreen('services')">
+              <div class="service-icon" style="background:#eff6ff;">🔗</div>
+              <div class="service-label">mAadhaar</div>
+            </button>
+            <button class="service-item" onclick="showScreen('help')">
+              <div class="service-icon" style="background:#fef2f2;">❓</div>
+              <div class="service-label">Help</div>
+            </button>
+          </div>
+
+          <!-- RECENT ACTIVITY — Recency effect (Serial Position) -->
+          <div class="spacer-md"></div>
+          <div class="section-label">Recent Activity</div>
+          <div class="activity-item" onclick="showScreen('history')">
+            <div class="activity-icon" style="background:var(--green-100);">✅</div>
+            <div class="activity-text">
+              <div class="activity-title">Authentication Successful</div>
+              <div class="activity-sub">Paytm KYC · Delhi, India</div>
+            </div>
+            <div class="activity-time">2h ago</div>
+          </div>
+          <div class="activity-item" onclick="showScreen('download')">
+            <div class="activity-icon" style="background:var(--blue-100);">📄</div>
+            <div class="activity-text">
+              <div class="activity-title">e-Aadhaar Downloaded</div>
+              <div class="activity-sub">PDF · 42 KB</div>
+            </div>
+            <div class="activity-time">Yesterday</div>
+          </div>
+          <div class="activity-item" onclick="showScreen('update')">
+            <div class="activity-icon" style="background:var(--amber-100);">📍</div>
+            <div class="activity-text">
+              <div class="activity-title">Address Update Requested</div>
+              <div class="activity-sub">New Delhi · Pending</div>
+            </div>
+            <div class="activity-time">3 days</div>
+          </div>
+          <div class="spacer-lg"></div>
+        </div>
+      </div>
+
+      <!-- ======================================================
+           SCREEN: PROFILE
+           Norman Visibility, Closure, Gestalt Common Region
+           ====================================================== -->
+      <div class="screen" id="screen-profile">
+        <div class="profile-header">
+          <div class="profile-avatar">
+            RC
+            <button class="profile-edit-btn" onclick="showToast('Photo upload not available in demo','info')">✏️</button>
+          </div>
+          <div class="profile-name">Rahul Kumar</div>
+          <div class="profile-uid">XXXX XXXX 5678</div>
+          <div style="margin-top:8px;"><span class="badge badge-success">✅ Verified Profile</span></div>
+        </div>
+        <div class="screen-body">
+          <div class="profile-card" style="margin:0;border-radius:var(--radius-xl) var(--radius-xl) 0 0;">
+            <!-- Biometric Status — Gestalt Proximity + Common Region -->
+            <div class="section-label" style="margin:0 0 10px;">Biometric Status</div>
+            <div class="bio-grid">
+              <div class="bio-card">
+                <div class="bio-card-title">Fingerprints</div>
+                <div class="bio-status-row"><div class="bio-dot active"></div><div class="bio-label">All 10 Active</div></div>
+              </div>
+              <div class="bio-card">
+                <div class="bio-card-title">Iris Scan</div>
+                <div class="bio-status-row"><div class="bio-dot active"></div><div class="bio-label">Both Enrolled</div></div>
+              </div>
+              <div class="bio-card">
+                <div class="bio-card-title">Face Photo</div>
+                <div class="bio-status-row"><div class="bio-dot active"></div><div class="bio-label">Registered</div></div>
+              </div>
+              <div class="bio-card">
+                <div class="bio-card-title">Mobile Link</div>
+                <div class="bio-status-row"><div class="bio-dot active"></div><div class="bio-label">+91 98765…</div></div>
+              </div>
+            </div>
+            <div class="divider"></div>
+            <!-- Personal Info — Info grouped logically (Gestalt Proximity) -->
+            <div class="section-label" style="margin:14px 0 6px;">Personal Information</div>
+            <div class="info-row"><span class="info-key">Full Name</span><span class="info-value">Rahul Kumar</span></div>
+            <div class="info-row"><span class="info-key">Date of Birth</span><span class="info-value">15 August 1995</span></div>
+            <div class="info-row"><span class="info-key">Gender</span><span class="info-value">Male</span></div>
+            <div class="info-row"><span class="info-key">Aadhaar No.</span><span class="info-value masked">XXXX XXXX 5678</span></div>
+            <div class="info-row"><span class="info-key">VID</span><span class="info-value masked">XXXX XXXX XXXX 4321</span></div>
+            <div class="info-row"><span class="info-key">Enrolment Date</span><span class="info-value">12 Mar 2012</span></div>
+            <div class="divider"></div>
+            <div class="section-label" style="margin:14px 0 6px;">Contact & Address</div>
+            <div class="info-row"><span class="info-key">Mobile</span><span class="info-value">+91 98765 XXXXX</span></div>
+            <div class="info-row"><span class="info-key">Email</span><span class="info-value">rahul****@gmail.com</span></div>
+            <div class="info-row"><span class="info-key">Address</span><span class="info-value">123, Rajpur Road, New Delhi - 110001</span></div>
+            <div class="divider"></div>
+            <!-- Lock/Unlock Biometrics — Safety (Asimov UX adaptation) -->
+            <div class="section-label" style="margin:14px 0 10px;">Security Settings</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0 12px;">
+              <div>
+                <div style="font-size:13px;font-weight:600;color:var(--neutral-900);">🔒 Biometric Lock</div>
+                <div style="font-size:11px;color:var(--neutral-500);margin-top:2px;">Prevents unauthorized authentication</div>
+              </div>
+              <button class="toggle-switch" id="bio-lock-toggle" onclick="toggleSwitch(this,'Biometrics locked','Biometrics unlocked')"></button>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0 16px;">
+              <div>
+                <div style="font-size:13px;font-weight:600;color:var(--neutral-900);">🔔 Auth Alerts</div>
+                <div style="font-size:11px;color:var(--neutral-500);margin-top:2px;">SMS on every authentication attempt</div>
+              </div>
+              <button class="toggle-switch on" id="auth-alert-toggle" onclick="toggleSwitch(this,'Alerts enabled','Alerts disabled')"></button>
+            </div>
+            <button class="btn-primary" onclick="showScreen('update')">✏️ &nbsp; Update Address</button>
+            <div class="spacer-md"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================================================
+           SCREEN: SERVICES
+           Alphabetical + Zipf's priority, Filter chips (Hick's)
+           ====================================================== -->
+      <div class="screen" id="screen-services">
+        <div class="app-bar">
+          <button class="app-bar-back" onclick="showScreen('home')">←</button>
+          <span class="app-bar-title">All Services</span>
+          <button class="app-bar-action">⋮</button>
+        </div>
+        <div class="screen-body">
+          <div class="services-search">
+            <span class="services-search-icon">🔍</span>
+            <input type="text" placeholder="Search services…" oninput="filterServices(this.value)">
+          </div>
+          <!-- Filter chips — Hick's Law: reduce decision load -->
+          <div class="filter-chips">
+            <div class="chip active" onclick="setChip(this,'all')">All</div>
+            <div class="chip" onclick="setChip(this,'identity')">Identity</div>
+            <div class="chip" onclick="setChip(this,'update')">Updates</div>
+            <div class="chip" onclick="setChip(this,'security')">Security</div>
+            <div class="chip" onclick="setChip(this,'download')">Downloads</div>
+          </div>
+
+          <!-- MOST USED (Zipf's Law / Pareto) -->
+          <div class="section-label">Most Used</div>
+          <button class="service-list-item" onclick="showScreen('download')">
+            <div class="service-list-icon" style="background:#eff6ff;">📄</div>
+            <div class="service-list-text">
+              <div class="service-list-title">Download e-Aadhaar</div>
+              <div class="service-list-desc">PDF with QR code · Password protected</div>
+            </div>
+            <div class="badge badge-info">FREE</div>
+            <span class="service-list-arrow">›</span>
+          </button>
+          <button class="service-list-item" onclick="showScreen('update')">
+            <div class="service-list-icon" style="background:#fffbeb;">📍</div>
+            <div class="service-list-text">
+              <div class="service-list-title">Update Address</div>
+              <div class="service-list-desc">Online self-service · Document upload</div>
+            </div>
+            <span class="service-list-arrow">›</span>
+          </button>
+          <button class="service-list-item" onclick="showScreen('history')">
+            <div class="service-list-icon" style="background:#f0fdf4;">🕐</div>
+            <div class="service-list-text">
+              <div class="service-list-title">Authentication History</div>
+              <div class="service-list-desc">View all auth requests · Last 6 months</div>
+            </div>
+            <span class="badge badge-success">3 New</span>
+            <span class="service-list-arrow">›</span>
+          </button>
+
+          <!-- IDENTITY SERVICES — Alphabetical order -->
+          <div class="section-label" style="margin-top:16px;">Identity Services</div>
+          <button class="service-list-item" onclick="showToast('Aadhaar seeding — Demo mode','info')">
+            <div class="service-list-icon" style="background:#fdf4ff;">🔗</div>
+            <div class="service-list-text"><div class="service-list-title">Aadhaar Seeding</div><div class="service-list-desc">Link bank, LPG, telecom accounts</div></div>
+            <span class="service-list-arrow">›</span>
+          </button>
+          <button class="service-list-item" onclick="showToast('Face Authentication — Demo mode','info')">
+            <div class="service-list-icon" style="background:#fef3c7;">😊</div>
+            <div class="service-list-text"><div class="service-list-title">Face Authentication</div><div class="service-list-desc">Liveness detection · Real-time</div></div>
+            <span class="service-list-arrow">›</span>
+          </button>
+          <button class="service-list-item" onclick="showToast('Generate VID — Demo mode','info')">
+            <div class="service-list-icon" style="background:#ecfdf5;">🆔</div>
+            <div class="service-list-text"><div class="service-list-title">Generate / Retrieve VID</div><div class="service-list-desc">Virtual ID for privacy-safe auth</div></div>
+            <span class="service-list-arrow">›</span>
+          </button>
+
+          <!-- SECURITY SERVICES -->
+          <div class="section-label" style="margin-top:16px;">Security Services</div>
+          <button class="service-list-item" onclick="showToast('Biometric lock toggled!','success')">
+            <div class="service-list-icon" style="background:#fef2f2;">🔒</div>
+            <div class="service-list-text"><div class="service-list-title">Lock / Unlock Biometrics</div><div class="service-list-desc">Protect against unauthorized use</div></div>
+            <span class="service-list-arrow">›</span>
+          </button>
+          <button class="service-list-item" onclick="showToast('Aadhaar lock set — Demo','success')">
+            <div class="service-list-icon" style="background:#eff6ff;">🛡️</div>
+            <div class="service-list-text"><div class="service-list-title">Lock Aadhaar Number</div><div class="service-list-desc">Use VID only for authentication</div></div>
+            <span class="service-list-arrow">›</span>
+          </button>
+          <button class="service-list-item" onclick="showToast('TOTP enabled — Demo','success')">
+            <div class="service-list-icon" style="background:#fff7ed;">🔑</div>
+            <div class="service-list-text"><div class="service-list-title">mAadhaar TOTP</div><div class="service-list-desc">Time-based one-time passwords</div></div>
+            <span class="service-list-arrow">›</span>
+          </button>
+          <div class="spacer-lg"></div>
+        </div>
+      </div>
+
+      <!-- ======================================================
+           SCREEN: ADDRESS UPDATE
+           Constraint-based form, Error prevention, 3-step wizard
+           Tesler's Law, Reset/Cancel, Norman Constraints
+           ====================================================== -->
+      <div class="screen" id="screen-update">
+        <div class="app-bar">
+          <button class="app-bar-back" onclick="showScreen('home')">←</button>
+          <span class="app-bar-title">Update Address</span>
+        </div>
+        <div class="screen-body">
+          <!-- Step Wizard — Closure, Progress Feedback -->
+          <div class="step-indicator">
+            <div class="step done">
+              <div class="step-dot">✓</div>
+              <div class="step-name">Verify</div>
+            </div>
+            <div class="step active">
+              <div class="step-dot">2</div>
+              <div class="step-name">New Address</div>
+            </div>
+            <div class="step">
+              <div class="step-dot">3</div>
+              <div class="step-name">Review</div>
+            </div>
+            <div class="step">
+              <div class="step-dot">4</div>
+              <div class="step-name">Submit</div>
+            </div>
+          </div>
+
+          <div class="alert-banner info" style="margin:8px 16px 0;">
+            <span class="alert-banner-icon">ℹ️</span>
+            <div class="alert-banner-text">
+              <div class="alert-banner-title">Document Required</div>
+              Keep a valid Proof of Address (PoA) document ready — Utility Bill, Rental Agreement, Bank Statement etc.
+            </div>
+          </div>
+
+          <!-- CURRENT ADDRESS — Gestalt Figure-Ground -->
+          <div class="spacer-sm"></div>
+          <div class="section-label">Current Address on Record</div>
+          <div class="form-section" style="border-left:3px solid var(--blue-300);">
+            <div style="font-size:13px;color:var(--neutral-600);line-height:1.7;">
+              123, Rajpur Road, Lajpat Nagar<br>
+              New Delhi - 110001<br>
+              Delhi, India
+            </div>
+          </div>
+
+          <!-- NEW ADDRESS FORM -->
+          <div class="section-label" style="margin-top:16px;">New Address</div>
+          <div class="form-section">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+              <div class="input-group">
+                <div class="input-label">House/Flat No.</div>
+                <input class="input-field" placeholder="e.g. 42B" style="padding:12px;">
+              </div>
+              <div class="input-group">
+                <div class="input-label">Building Name</div>
+                <input class="input-field" placeholder="Optional" style="padding:12px;">
+              </div>
+            </div>
+            <div class="input-group" style="margin-bottom:12px;">
+              <div class="input-label">Street / Road Name *</div>
+              <input class="input-field" placeholder="e.g. MG Road">
+            </div>
+            <div class="input-group" style="margin-bottom:12px;">
+              <div class="input-label">Landmark</div>
+              <input class="input-field" placeholder="Near bus stop, temple…">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+              <div class="input-group">
+                <div class="input-label">PIN Code *</div>
+                <input class="input-field" placeholder="110001" maxlength="6" type="tel" style="padding:12px;" oninput="validatePIN(this)">
+              </div>
+              <div class="input-group">
+                <div class="input-label">City / Town *</div>
+                <input class="input-field" placeholder="New Delhi" style="padding:12px;">
+              </div>
+            </div>
+            <!-- Alphabetical state list — Alphabetical Sorting Guideline -->
+            <div class="input-group" style="margin-bottom:12px;">
+              <div class="input-label">State *</div>
+              <div style="position:relative;">
+                <select class="select-field">
+                  <option>Select State</option>
+                  <option>Andhra Pradesh</option>
+                  <option>Arunachal Pradesh</option>
+                  <option>Assam</option>
+                  <option>Bihar</option>
+                  <option>Chhattisgarh</option>
+                  <option>Goa</option>
+                  <option>Gujarat</option>
+                  <option>Haryana</option>
+                  <option>Himachal Pradesh</option>
+                  <option>Jharkhand</option>
+                  <option>Karnataka</option>
+                  <option>Kerala</option>
+                  <option>Madhya Pradesh</option>
+                  <option>Maharashtra</option>
+                  <option>Manipur</option>
+                  <option>Meghalaya</option>
+                  <option>Mizoram</option>
+                  <option>Nagaland</option>
+                  <option selected>Delhi</option>
+                  <option>Odisha</option>
+                  <option>Punjab</option>
+                  <option>Rajasthan</option>
+                  <option>Tamil Nadu</option>
+                  <option>Telangana</option>
+                  <option>Uttar Pradesh</option>
+                  <option>Uttarakhand</option>
+                  <option>West Bengal</option>
+                </select>
+                <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--neutral-400);">▼</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- DOCUMENT UPLOAD -->
+          <div class="section-label" style="margin-top:16px;">Proof of Address Document</div>
+          <div class="form-section">
+            <div style="border:2px dashed var(--neutral-200);border-radius:var(--radius-md);padding:24px;text-align:center;cursor:pointer;transition:var(--transition);" onclick="showToast('File picker — Demo mode','info')">
+              <div style="font-size:32px;margin-bottom:8px;">📎</div>
+              <div style="font-size:13px;font-weight:600;color:var(--neutral-700);">Tap to upload document</div>
+              <div style="font-size:11px;color:var(--neutral-400);margin-top:4px;">JPG, PNG, PDF · Max 2MB</div>
+            </div>
+            <div class="input-group" style="margin-top:12px;">
+              <div class="input-label">Document Type</div>
+              <select class="select-field">
+                <option>Select document type</option>
+                <option>Utility Bill (Electricity/Water/Gas)</option>
+                <option>Bank Statement</option>
+                <option>Rental Agreement</option>
+                <option>Passport</option>
+                <option>Voter ID</option>
+                <option>Driving Licence</option>
+                <option>Property Tax Receipt</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- RESET / CANCEL buttons — Shneiderman Rule 4 (Easy Reversal) -->
+          <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <button class="btn-secondary" onclick="showToast('Form reset','info')" style="min-height:48px;font-size:14px;">🔄 Reset</button>
+            <button class="btn-primary" onclick="showToast('Address update submitted! You will receive SMS confirmation.','success')" style="min-height:48px;font-size:14px;">Submit →</button>
+          </div>
+          <div style="text-align:center;padding:0 20px 20px;">
+            <button style="background:none;border:none;font-size:12px;color:var(--neutral-400);cursor:pointer;text-decoration:underline;" onclick="showScreen('home')">Cancel — Go Back to Home</button>
+          </div>
+          <div class="spacer-md"></div>
+        </div>
+      </div>
+
+      <!-- ======================================================
+           SCREEN: e-AADHAAR DOWNLOAD
+           Closure, Feedback, Reciprocity
+           ====================================================== -->
+      <div class="screen" id="screen-download">
+        <div class="app-bar">
+          <button class="app-bar-back" onclick="showScreen('home')">←</button>
+          <span class="app-bar-title">Download e-Aadhaar</span>
+        </div>
+        <div class="screen-body">
+          <!-- Preview Card -->
+          <div class="download-card">
+            <div class="download-card-title">Your Digital Aadhaar</div>
+            <div class="download-card-sub">Official UIDAI document · Legally valid</div>
+            <div class="aadhaar-preview">
+              <div class="aadhaar-preview-img">🪪</div>
+              <div class="aadhaar-preview-text">
+                <div class="aadhaar-preview-name">Rahul Kumar</div>
+                <div class="aadhaar-preview-uid">XXXX XXXX 5678</div>
+              </div>
+              <div class="badge badge-success" style="margin-left:auto;">✓</div>
+            </div>
+          </div>
+
+          <!-- Download Format Options — Hick's Law: 3 clear options -->
+          <div class="section-label">Select Download Format</div>
+          <div class="download-options">
+            <div class="download-option selected" onclick="selectDownloadOption(this)">
+              <div class="download-option-icon" style="background:#eff6ff;">📄</div>
+              <div class="download-option-text">
+                <div class="download-option-title">Standard e-Aadhaar (PDF)</div>
+                <div class="download-option-sub">Password protected · With QR code · ~42 KB</div>
+              </div>
+              <div class="radio-outer"><div class="radio-inner"></div></div>
+            </div>
+            <div class="download-option" onclick="selectDownloadOption(this)">
+              <div class="download-option-icon" style="background:#f0fdf4;">📱</div>
+              <div class="download-option-text">
+                <div class="download-option-title">Masked Aadhaar (PDF)</div>
+                <div class="download-option-sub">Only last 4 digits visible · For KYC sharing</div>
+              </div>
+              <div class="radio-outer"><div class="radio-inner"></div></div>
+            </div>
+            <div class="download-option" onclick="selectDownloadOption(this)">
+              <div class="download-option-icon" style="background:#fff7ed;">🔗</div>
+              <div class="download-option-text">
+                <div class="download-option-title">Offline e-KYC (XML/ZIP)</div>
+                <div class="download-option-sub">For SEBI/banking apps · Share Key required</div>
+              </div>
+              <div class="radio-outer"><div class="radio-inner"></div></div>
+            </div>
+          </div>
+
+          <!-- Password Info — Norman Mapping + Password Masking Guideline -->
+          <div class="spacer-sm"></div>
+          <div class="section-label">Document Password</div>
+          <div style="padding:0 16px;">
+            <div class="card" style="border:1px solid var(--neutral-200);">
+              <div style="display:flex;gap:10px;align-items:flex-start;">
+                <span style="font-size:20px;">🔑</span>
+                <div style="font-size:12px;color:var(--neutral-700);line-height:1.6;">
+                  <strong>Default PDF Password:</strong><br>
+                  First 4 letters of name (CAPS) + Year of birth<br>
+                  <span style="background:var(--neutral-100);padding:4px 10px;border-radius:6px;font-family:monospace;font-weight:700;color:var(--blue-700);">RAHU1995</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Custom share key for XML -->
+          <div class="spacer-sm"></div>
+          <div style="padding:0 16px;">
+            <div class="input-group">
+              <div class="input-label">Enter Share Code (4 digits)</div>
+              <div class="input-password-wrap">
+                <input class="input-field" id="share-code" placeholder="Set a 4-digit share code" maxlength="4" type="password" inputmode="numeric">
+                <button class="toggle-mask" onclick="toggleMask('share-code',this)">👁</button>
+              </div>
+              <div class="input-hint">This code is required to open the XML file</div>
+            </div>
+          </div>
+
+          <div class="spacer-sm"></div>
+          <div style="padding:0 16px;">
+            <!-- OTP trigger for download -->
+            <div class="alert-banner warning" style="margin:0 0 12px;">
+              <span class="alert-banner-icon">⚠️</span>
+              <div class="alert-banner-text">
+                <div class="alert-banner-title">OTP Verification Required</div>
+                An OTP will be sent to +91 98765 XXXXX before download.
+              </div>
+            </div>
+            <button class="btn-primary" onclick="simulateDownload()">
+              📥 &nbsp; Download e-Aadhaar
+            </button>
+          </div>
+          <div class="spacer-lg"></div>
+        </div>
+      </div>
+
+      <!-- ======================================================
+           SCREEN: AUTH HISTORY
+           Recency (newest first), Feedback, Visibility
+           ====================================================== -->
+      <div class="screen" id="screen-history">
+        <div class="app-bar">
+          <button class="app-bar-back" onclick="showScreen('home')">←</button>
+          <span class="app-bar-title">Authentication History</span>
+          <button class="app-bar-action" onclick="showToast('Filter options opened','info')">⚙️</button>
+        </div>
+        <div class="screen-body">
+          <!-- Summary Cards — Gestalt Symmetry + Common Fate -->
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 16px 0;">
+            <div style="background:var(--white);border-radius:var(--radius-md);padding:12px;text-align:center;box-shadow:var(--shadow-sm);">
+              <div style="font-size:20px;font-weight:800;color:var(--green-700);">28</div>
+              <div style="font-size:10px;color:var(--neutral-500);font-weight:600;margin-top:2px;">Success</div>
+            </div>
+            <div style="background:var(--white);border-radius:var(--radius-md);padding:12px;text-align:center;box-shadow:var(--shadow-sm);">
+              <div style="font-size:20px;font-weight:800;color:var(--red-600);">2</div>
+              <div style="font-size:10px;color:var(--neutral-500);font-weight:600;margin-top:2px;">Failed</div>
+            </div>
+            <div style="background:var(--white);border-radius:var(--radius-md);padding:12px;text-align:center;box-shadow:var(--shadow-sm);">
+              <div style="font-size:20px;font-weight:800;color:var(--blue-500);">30</div>
+              <div style="font-size:10px;color:var(--neutral-500);font-weight:600;margin-top:2px;">Total</div>
+            </div>
+          </div>
+
+          <!-- Filter chips -->
+          <div class="history-filter">
+            <div class="chip active" onclick="setChip(this,'all')">All</div>
+            <div class="chip" onclick="setChip(this,'success')">Success</div>
+            <div class="chip" onclick="setChip(this,'failed')">Failed</div>
+            <div class="chip" onclick="setChip(this,'otp')">OTP</div>
+            <div class="chip" onclick="setChip(this,'bio')">Biometric</div>
+          </div>
+
+          <!-- Section header -->
+          <div class="section-label">This Month · April 2026</div>
+
+          <!-- History Items — Recency: newest first -->
+          <div class="history-item auth-success">
+            <div class="history-icon" style="background:var(--green-100);">✅</div>
+            <div class="history-text">
+              <div class="history-title">Authentication Successful</div>
+              <div class="history-sub">Paytm KYC Verification · OTP Method</div>
+              <div class="history-meta">
+                <span>📍 Delhi, IN</span>
+                <span>🕐 Today 9:42 AM</span>
+                <span>🏢 Paytm Payments Bank</span>
+              </div>
+            </div>
+          </div>
+          <div class="history-item auth-fail">
+            <div class="history-icon" style="background:var(--red-100);">❌</div>
+            <div class="history-text">
+              <div class="history-title">Authentication Failed</div>
+              <div class="history-sub">HDFC Bank KYC · Fingerprint mismatch</div>
+              <div class="history-meta">
+                <span>📍 Mumbai, IN</span>
+                <span>🕐 Yesterday 3:15 PM</span>
+              </div>
+            </div>
+          </div>
+          <div class="history-item auth-info">
+            <div class="history-icon" style="background:var(--blue-100);">📄</div>
+            <div class="history-text">
+              <div class="history-title">e-Aadhaar Downloaded</div>
+              <div class="history-sub">Standard PDF · Self download</div>
+              <div class="history-meta">
+                <span>🕐 16 Apr, 11:00 AM</span>
+                <span>📱 Mobile App</span>
+              </div>
+            </div>
+          </div>
+          <div class="history-item auth-success">
+            <div class="history-icon" style="background:var(--green-100);">✅</div>
+            <div class="history-text">
+              <div class="history-title">Address Update Initiated</div>
+              <div class="history-sub">Self-service portal · Pending verification</div>
+              <div class="history-meta">
+                <span>🕐 13 Apr, 2:30 PM</span>
+                <span class="badge badge-warning" style="padding:2px 8px;">Pending</span>
+              </div>
+            </div>
+          </div>
+          <div class="history-item auth-success">
+            <div class="history-icon" style="background:var(--green-100);">✅</div>
+            <div class="history-text">
+              <div class="history-title">SBI Bank KYC</div>
+              <div class="history-sub">Face Authentication · Account opening</div>
+              <div class="history-meta">
+                <span>📍 Delhi, IN</span>
+                <span>🕐 10 Apr, 10:05 AM</span>
+              </div>
+            </div>
+          </div>
+          <div class="history-item auth-fail">
+            <div class="history-icon" style="background:var(--red-100);">⚠️</div>
+            <div class="history-text">
+              <div class="history-title">Unauthorized Attempt Blocked</div>
+              <div class="history-sub">Biometrics locked · Access denied</div>
+              <div class="history-meta">
+                <span>📍 Unknown Location</span>
+                <span>🕐 8 Apr, 3:22 AM</span>
+                <span class="badge badge-error" style="padding:2px 8px;">Blocked</span>
+              </div>
+            </div>
+          </div>
+          <div class="spacer-lg"></div>
+        </div>
+      </div>
+
+      <!-- ======================================================
+           SCREEN: HELP CENTER
+           Principle of Least Effort, Chatbot, FAQ
+           Zipf's: most common questions first
+           ====================================================== -->
+      <div class="screen" id="screen-help">
+        <div class="help-hero">
+          <div style="font-size:32px;margin-bottom:8px;">🤝</div>
+          <div class="help-hero-title">How can we help?</div>
+          <div class="help-hero-sub">Find answers to common questions instantly</div>
+          <div class="help-search">
+            <span class="help-search-icon">🔍</span>
+            <input type="text" placeholder="Search help articles…">
+          </div>
+        </div>
+        <div class="screen-body" style="background:var(--neutral-50);">
+          <!-- Contact Options — Primacy: shown first -->
+          <div class="spacer-sm"></div>
+          <div class="section-label">Contact Support</div>
+          <div class="contact-card" onclick="showToast('Connecting to chatbot…','info')">
+            <div class="contact-icon" style="background:#eff6ff;">💬</div>
+            <div class="contact-text">
+              <div class="contact-title">Chat with AI Assistant</div>
+              <div class="contact-sub">Available 24×7 · Instant responses</div>
+            </div>
+            <div class="badge badge-success">Online</div>
+            <span style="color:var(--neutral-300);">›</span>
+          </div>
+          <div class="contact-card" onclick="showToast('Calling 1947 — Aadhaar helpline','info')">
+            <div class="contact-icon" style="background:#fff7ed;">📞</div>
+            <div class="contact-text">
+              <div class="contact-title">Call Helpline: 1947</div>
+              <div class="contact-sub">Mon–Sat · 7 AM – 11 PM</div>
+            </div>
+            <span style="color:var(--neutral-300);">›</span>
+          </div>
+          <div class="contact-card" onclick="showToast('Email support opened','info')">
+            <div class="contact-icon" style="background:#f0fdf4;">📧</div>
+            <div class="contact-text">
+              <div class="contact-title">Email: help@uidai.gov.in</div>
+              <div class="contact-sub">Response within 3–5 business days</div>
+            </div>
+            <span style="color:var(--neutral-300);">›</span>
+          </div>
+
+          <!-- FAQ — Zipf's Law: most asked first; Gestalt Continuity -->
+          <div class="spacer-sm"></div>
+          <div class="section-label">Frequently Asked Questions</div>
+          <div class="faq-item open" onclick="toggleFAQ(this)">
+            <button class="faq-header">
+              <span class="faq-question">How do I download my e-Aadhaar?</span>
+              <span class="faq-chevron">⌄</span>
+            </button>
+            <div class="faq-answer">
+              <p>Go to Services → Download e-Aadhaar → Select format (Standard PDF recommended) → Enter OTP → Download. The password is first 4 letters of name (uppercase) + year of birth. Example: <strong>RAHU1995</strong></p>
+            </div>
+          </div>
+          <div class="faq-item" onclick="toggleFAQ(this)">
+            <button class="faq-header">
+              <span class="faq-question">How to update my address online?</span>
+              <span class="faq-chevron">⌄</span>
+            </button>
+            <div class="faq-answer">
+              <p>Go to Services → Update Address → Fill new address → Upload a valid Proof of Address document → Verify with OTP → Submit. Processing takes 5–7 working days. You will receive SMS confirmation.</p>
+            </div>
+          </div>
+          <div class="faq-item" onclick="toggleFAQ(this)">
+            <button class="faq-header">
+              <span class="faq-question">What is Virtual ID (VID) and how to use it?</span>
+              <span class="faq-chevron">⌄</span>
+            </button>
+            <div class="faq-answer">
+              <p>VID is a 16-digit temporary number that can be used instead of your actual Aadhaar number for authentication. It protects your real Aadhaar number. Generate VID from Services → Generate VID. It can be regenerated every 24 hours.</p>
+            </div>
+          </div>
+          <div class="faq-item" onclick="toggleFAQ(this)">
+            <button class="faq-header">
+              <span class="faq-question">How do I lock / unlock my biometrics?</span>
+              <span class="faq-chevron">⌄</span>
+            </button>
+            <div class="faq-answer">
+              <p>Go to Profile → Security Settings → toggle "Biometric Lock". When locked, fingerprint and iris-based authentication is disabled, preventing unauthorized use. You can unlock it anytime with OTP verification.</p>
+            </div>
+          </div>
+          <div class="faq-item" onclick="toggleFAQ(this)">
+            <button class="faq-header">
+              <span class="faq-question">Why was my authentication rejected?</span>
+              <span class="faq-chevron">⌄</span>
+            </button>
+            <div class="faq-answer">
+              <p>Possible reasons: Biometrics locked, fingerprint mismatch (try cleaning fingers), expired OTP, or service outage. Check Auth History for error codes. If biometrics fail repeatedly, visit nearest Aadhaar Enrollment Centre for re-enrollment.</p>
+            </div>
+          </div>
+          <div class="faq-item" onclick="toggleFAQ(this)">
+            <button class="faq-header">
+              <span class="faq-question">Is the MyAadhar app safe and secure?</span>
+              <span class="faq-chevron">⌄</span>
+            </button>
+            <div class="faq-answer">
+              <p>Yes. The app uses AES-256 encryption, does not store biometric data on device, and all communication is over HTTPS/TLS 1.3. It is an official UIDAI application available only on government-verified app stores.</p>
+            </div>
+          </div>
+
+          <!-- Find Enrollment Center -->
+          <div class="spacer-sm"></div>
+          <div class="section-label">Resources</div>
+          <div class="contact-card" onclick="showToast('Finding nearest Aadhaar Centre…','info')">
+            <div class="contact-icon" style="background:#fdf4ff;">📍</div>
+            <div class="contact-text">
+              <div class="contact-title">Find Enrolment Centre</div>
+              <div class="contact-sub">Nearest UIDAI service centre</div>
+            </div>
+            <span style="color:var(--neutral-300);">›</span>
+          </div>
+          <div class="contact-card" onclick="showToast('Opening Grievance Portal…','info')">
+            <div class="contact-icon" style="background:#fef2f2;">📋</div>
+            <div class="contact-text">
+              <div class="contact-title">File a Grievance</div>
+              <div class="contact-sub">UIDAI grievance portal · Track status</div>
+            </div>
+            <span style="color:var(--neutral-300);">›</span>
+          </div>
+          <div class="spacer-lg"></div>
+        </div>
+      </div>
+
+      <!-- ======================================================
+           SCREEN: SETTINGS
+           Universal Design, Accessibility, Language
+           ====================================================== -->
+      <div class="screen" id="screen-settings">
+        <div class="app-bar">
+          <button class="app-bar-back" onclick="showScreen('home')">←</button>
+          <span class="app-bar-title">Settings</span>
+        </div>
+        <div class="screen-body">
+          <!-- Language — Universal Design, Multi-language -->
+          <div class="spacer-sm"></div>
+          <div class="section-label">Language / भाषा</div>
+          <div class="lang-grid">
+            <button class="lang-btn active" onclick="setLang(this,'English')">English</button>
+            <button class="lang-btn" onclick="setLang(this,'हिंदी')">हिंदी</button>
+            <button class="lang-btn" onclick="setLang(this,'தமிழ்')">தமிழ்</button>
+            <button class="lang-btn" onclick="setLang(this,'తెలుగు')">తెలుగు</button>
+            <button class="lang-btn" onclick="setLang(this,'বাংলা')">বাংলা</button>
+            <button class="lang-btn" onclick="setLang(this,'मराठी')">मराठी</button>
+            <button class="lang-btn" onclick="setLang(this,'ਪੰਜਾਬੀ')">ਪੰਜਾਬੀ</button>
+            <button class="lang-btn" onclick="setLang(this,'ಕನ್ನಡ')">ಕನ್ನಡ</button>
+            <button class="lang-btn" onclick="setLang(this,'മലയാളം')">മലയാളം</button>
+          </div>
+
+          <!-- ACCESSIBILITY — Universal Design -->
+          <div class="spacer-sm"></div>
+          <div class="section-label">Accessibility</div>
+          <div class="settings-section">
+            <div class="settings-item" style="border-radius:var(--radius-md) var(--radius-md) 0 0;">
+              <div class="settings-item-icon" style="background:#eff6ff;">🔊</div>
+              <div class="settings-item-text">
+                <div class="settings-item-title">Voice Assistance</div>
+                <div class="settings-item-sub">Screen reader support · TTS</div>
+              </div>
+              <button class="toggle-switch" onclick="toggleSwitch(this,'Voice assistance ON','Voice assistance OFF')"></button>
+            </div>
+            <div class="divider" style="margin:0 16px;"></div>
+            <div class="settings-item">
+              <div class="settings-item-icon" style="background:#1e1e1e;border-radius:10px;">🌑</div>
+              <div class="settings-item-text">
+                <div class="settings-item-title">High Contrast Mode</div>
+                <div class="settings-item-sub">Better visibility for low vision</div>
+              </div>
+              <button class="toggle-switch" onclick="toggleSwitch(this,'High contrast ON','High contrast OFF')"></button>
+            </div>
+            <div class="divider" style="margin:0 16px;"></div>
+            <div class="settings-item">
+              <div class="settings-item-icon" style="background:#fff7ed;">🔤</div>
+              <div class="settings-item-text">
+                <div class="settings-item-title">Large Text Mode</div>
+                <div class="settings-item-sub">Increases all text sizes by 1.3×</div>
+              </div>
+              <button class="toggle-switch on" onclick="toggleSwitch(this,'Large text ON','Large text OFF')"></button>
+            </div>
+            <div class="divider" style="margin:0 16px;"></div>
+            <div class="settings-item" style="border-radius:0 0 var(--radius-md) var(--radius-md);">
+              <div class="settings-item-icon" style="background:#f0fdf4;">📳</div>
+              <div class="settings-item-text">
+                <div class="settings-item-title">Haptic Feedback</div>
+                <div class="settings-item-sub">Vibration on actions</div>
+              </div>
+              <button class="toggle-switch on" onclick="toggleSwitch(this,'Haptic ON','Haptic OFF')"></button>
+            </div>
+          </div>
+
+          <!-- PRIVACY & SECURITY -->
+          <div class="spacer-sm"></div>
+          <div class="section-label">Privacy & Security</div>
+          <div class="settings-section">
+            <div class="settings-item" style="border-radius:var(--radius-md) var(--radius-md) 0 0;">
+              <div class="settings-item-icon" style="background:#fef2f2;">🔐</div>
+              <div class="settings-item-text">
+                <div class="settings-item-title">App Lock (PIN/Biometric)</div>
+                <div class="settings-item-sub">Require authentication on open</div>
+              </div>
+              <button class="toggle-switch on" onclick="toggleSwitch(this,'App lock ON','App lock OFF')"></button>
+            </div>
+            <div class="divider" style="margin:0 16px;"></div>
+            <div class="settings-item">
+              <div class="settings-item-icon" style="background:#fffbeb;">🖥️</div>
+              <div class="settings-item-text">
+                <div class="settings-item-title">Screenshot Protection</div>
+                <div class="settings-item-sub">Prevent screen captures</div>
+              </div>
+              <button class="toggle-switch on" onclick="toggleSwitch(this,'Screenshots blocked','Screenshots allowed')"></button>
+            </div>
+            <div class="divider" style="margin:0 16px;"></div>
+            <div class="settings-item" style="border-radius:0 0 var(--radius-md) var(--radius-md);">
+              <div class="settings-item-icon" style="background:#f5f3ff;">🗑️</div>
+              <div class="settings-item-text">
+                <div class="settings-item-title">Clear Local Data</div>
+                <div class="settings-item-sub">Remove all cached data</div>
+              </div>
+              <span style="color:var(--neutral-300);">›</span>
+            </div>
+          </div>
+
+          <!-- NOTIFICATIONS -->
+          <div class="spacer-sm"></div>
+          <div class="section-label">Notifications</div>
+          <div class="settings-section">
+            <div class="settings-item" style="border-radius:var(--radius-md) var(--radius-md) 0 0;">
+              <div class="settings-item-icon" style="background:#eff6ff;">🔔</div>
+              <div class="settings-item-text">
+                <div class="settings-item-title">Authentication Alerts</div>
+                <div class="settings-item-sub">Notify on every auth attempt</div>
+              </div>
+              <button class="toggle-switch on" onclick="toggleSwitch(this,'Auth alerts ON','Auth alerts OFF')"></button>
+            </div>
+            <div class="divider" style="margin:0 16px;"></div>
+            <div class="settings-item" style="border-radius:0 0 var(--radius-md) var(--radius-md);">
+              <div class="settings-item-icon" style="background:#f0fdf4;">📣</div>
+              <div class="settings-item-text">
+                <div class="settings-item-title">UIDAI Announcements</div>
+                <div class="settings-item-sub">Updates from UIDAI</div>
+              </div>
+              <button class="toggle-switch on" onclick="toggleSwitch(this,'Announcements ON','Announcements OFF')"></button>
+            </div>
+          </div>
+
+          <!-- ABOUT -->
+          <div class="spacer-sm"></div>
+          <div class="section-label">About</div>
+          <div class="settings-section">
+            <div class="settings-item" style="border-radius:var(--radius-md) var(--radius-md) 0 0;">
+              <div class="settings-item-icon" style="background:#f8fafc;">ℹ️</div>
+              <div class="settings-item-text">
+                <div class="settings-item-title">App Version</div>
+                <div class="settings-item-sub">v3.2.1 · Build 20260115</div>
+              </div>
+            </div>
+            <div class="divider" style="margin:0 16px;"></div>
+            <div class="settings-item" style="border-radius:0 0 var(--radius-md) var(--radius-md);">
+              <div class="settings-item-icon" style="background:#fff7ed;">📜</div>
+              <div class="settings-item-text">
+                <div class="settings-item-title">Privacy Policy & Terms</div>
+                <div class="settings-item-sub">UIDAI legal documentation</div>
+              </div>
+              <span style="color:var(--neutral-300);">›</span>
+            </div>
+          </div>
+
+          <!-- Logout — Recency effect: destructive at bottom -->
+          <div class="spacer-sm"></div>
+          <div style="padding:0 16px 8px;">
+            <button style="width:100%;padding:15px;background:var(--red-100);color:var(--red-600);border:1.5px solid #fca5a5;border-radius:var(--radius-md);font-size:15px;font-weight:700;cursor:pointer;" onclick="showToast('Logged out securely','info')">
+              🚪 &nbsp; Logout
+            </button>
+          </div>
+          <div class="spacer-lg"></div>
+        </div>
+      </div>
+
+    </div><!-- /screens -->
+
+    <!-- BOTTOM NAVIGATION — Miller's 4 items, Fitts', Serial Position -->
+    <nav class="bottom-nav" id="bottom-nav">
+      <button class="nav-item active" data-screen="home" onclick="showScreen('home',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        <span class="nav-label">Home</span>
+      </button>
+      <button class="nav-item" data-screen="services" onclick="showScreen('services',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+        </svg>
+        <span class="nav-label">Services</span>
+      </button>
+      <button class="nav-item" data-screen="profile" onclick="showScreen('profile',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span class="nav-label">Profile</span>
+      </button>
+      <button class="nav-item" data-screen="help" onclick="showScreen('help',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <span class="nav-label">Help</span>
+      </button>
+    </nav>
+
+  </div><!-- /phone-shell -->
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <!-- HCI MAP OVERLAY -->
+  <div class="hci-map-overlay" id="hci-overlay">
+    <div class="hci-map-panel">
+      <button class="hci-close" onclick="document.getElementById('hci-overlay').classList.remove('show')">✕ Close</button>
+      <h2>🧠 HCI Law Mapping</h2>
+      <p class="sub">Every UI element mapped to its governing HCI principle — for evaluation & viva</p>
+
+      <div class="hci-law-row"><span class="hci-law-tag">Pareto 80-20</span><div class="hci-law-desc"><strong>Top 3 Quick Actions</strong> on dashboard: Download, Update Address, Auth History — 80% of user needs served by 20% of features. Positioned prominently below the Aadhaar card.</div></div>
+      <div class="hci-law-row"><span class="hci-law-tag">Miller's Law 7±2</span><div class="hci-law-desc"><strong>Services grid has exactly 8 icons</strong> (≤9). Bottom navigation has 4 items. FAQ section has 6 questions. Each filter chip row ≤6 items to avoid cognitive overload.</div></div>
+      <div class="hci-law-row"><span class="hci-law-tag">Hick's Law</span><div class="hci-law-desc"><strong>OTP login</strong> has only 2 inputs. Download screen offers 3 format choices. Filter chips reduce visible list items. Every decision point minimized to ≤3 options where possible.</div></div>
+      <div class="hci-law-row"><span class="hci-law-tag">Fitts' Law</span><div class="hci-law-desc"><strong>All primary buttons are full-width (54px+ height)</strong>. Quick action cards are large tap targets. Bottom nav items are ≥62px tall. OTP cells are 48×56px — large for thumb reach.</div></div>
+      <div class="hci-law-row"><span class="hci-law-tag">Serial Position</span><div class="hci-law-desc"><strong>Primacy:</strong> Download, Update, History appear first (most critical). <strong>Recency:</strong> Logout placed last in Settings. Auth history sorted newest first. FAQ most-asked question is first.</div></div>
+      <div class="hci-law-row"><span class="hci-law-tag">Zipf's Law</span><div class="hci-law-desc"><strong>Most-Used section</strong> in Services lists top 3 services. Download e-Aadhaar appears on Home AND Services. Address Update is accessible from 3 paths. Frequent features have shortcuts.</div></div>
+      <div class="hci-law-row"><span class="hci-law-tag">Jakob's Law</span><div class="hci-law-desc"><strong>Design mirrors DigiLocker/UMANG apps</strong>: bottom navigation, card-based layout, status bar at top, avatar + name in header — familiar patterns reduce learning curve.</div></div>
+      <div class="hci-law-row"><span class="hci-law-tag">Norman Principles</span><div class="hci-law-desc"><strong>Visibility:</strong> Status badges everywhere. <strong>Feedback:</strong> Toast notifications on every action. <strong>Constraints:</strong> PIN limited to 4 digits, mobile to 10 digits. <strong>Mapping:</strong> Green=success, Red=error. <strong>Affordance:</strong> Buttons look tappable with shadows.</div></div>
+      <div class="hci-law-row"><span class="hci-law-tag">Shneiderman 8 Rules</span><div class="hci-law-desc">(1) Consistency: same card style everywhere. (2) Shortcuts: biometric login, quick actions. (3) Feedback: toast + badges. (4) Dialogs: 4-step address wizard. (5) Error prevention: constraints + alerts. (6) Reversal: Reset + Cancel buttons. (7) User control: lock/unlock toggles. (8) Memory load: Recognition over recall throughout.</div></div>
+      <div class="hci-law-row"><span class="hci-law-tag">Nielsen Heuristics</span><div class="hci-law-desc">(1) System status: verified badge, biometric dots. (2) Real world: "Aadhaar card" card design. (3) User control: back button on every screen. (4) Consistency: blue=interactive, green=ok. (5) Error prevention: OTP before sensitive actions. (6) Recognition: icons with labels. (7) Flexibility: biometric + OTP + password.</div></div>
+      <div class="hci-law-row"><span class="hci-law-tag">Gestalt Laws</span><div class="hci-law-desc"><strong>Proximity:</strong> Biometric cards grouped 2×2. <strong>Similarity:</strong> All service items same card style. <strong>Closure:</strong> Step wizard shows incomplete circle → motivates completion. <strong>Common Region:</strong> Profile sections in bordered cards. <strong>Figure-Ground:</strong> Modal overlays. <strong>Continuity:</strong> Progress bar flows left-to-right. <strong>Symmetry:</strong> Stats summary in 3-column grid.</div></div>
+      <div class="hci-law-row"><span class="hci-law-tag">Inverted Pyramid</span><div class="hci-law-desc"><strong>Dashboard layout:</strong> Aadhaar card + verification status (most critical) → Top 3 quick actions → 8 service grid → Recent activity (detail). Most important information always at the top.</div></div>
+      <div class="hci-law-row"><span class="hci-law-tag">Tesler's Law</span><div class="hci-law-desc"><strong>Complexity conserved, not eliminated:</strong> Address update has 4 steps (document upload, form, review, submit) because the complexity is inherent. The UI absorbs it via wizard pattern so user effort is minimized.</div></div>
+      <div class="hci-law-row"><span class="hci-law-tag">Power Law of Practice</span><div class="hci-law-desc"><strong>Biometric login shortcut</strong> on login screen. Quick Actions at top of dashboard. Frequent services appear before alphabetical list. Returning users skip onboarding directly to auth.</div></div>
+      <div class="hci-law-row"><span class="hci-law-tag">Asimov UX Safety</span><div class="hci-law-desc"><strong>Never harm user data:</strong> Biometric lock toggle prevents unauthorized auth. Screenshot protection prevents data leakage. OTP required before download. Unauthorized attempts are blocked and logged.</div></div>
+      <div class="hci-law-row"><span class="hci-law-tag">Persuasion Psych</span><div class="hci-law-desc"><strong>Authority:</strong> UIDAI emblem, Govt. of India branding, ISO badge. <strong>Social Proof:</strong> "1.3B+ Users" on splash. <strong>Trust:</strong> Blue color palette, verified checkmarks. <strong>Scarcity:</strong> "OTP expires in 30s" urgency. <strong>Reciprocity:</strong> Free download emphasized.</div></div>
+      <div class="hci-law-row"><span class="hci-law-tag">Color Psychology</span><div class="hci-law-desc"><strong>Blue (#2563c8):</strong> Trust, government authority — primary brand color. <strong>Green (#22c55e):</strong> Success, verified, safe. <strong>Red (#dc2626):</strong> Errors, failures, warnings. <strong>Amber (#f59e0b):</strong> Caution, pending. <strong>Saffron (#FF6B00):</strong> Indian identity, accent.</div></div>
+      <div class="hci-law-row"><span class="hci-law-tag">Universal Design</span><div class="hci-law-desc"><strong>9 Indian languages</strong> in settings. Voice assistance toggle. High contrast mode. Large text (1.3× scale). Haptic feedback. All tap targets ≥44px (WCAG AA). F-pattern layout with left-aligned text.</div></div>
+      <div class="hci-law-row"><span class="hci-law-tag">Alphabetical Sorting</span><div class="hci-law-desc"><strong>State dropdown</strong> is alphabetically sorted (Andhra Pradesh → West Bengal). Services search results sort alphabetically. Filter chips sort All→Identity→Updates→Security→Downloads (frequency then alpha).</div></div>
+      <div class="hci-law-row"><span class="hci-law-tag">Password Masking</span><div class="hci-law-desc"><strong>Aadhaar number masked by default</strong> (shows XXXX XXXX ####). Eye toggle reveals full number. Share code input is type="password". OTP cells show ● when filled. Unmask button always visible per W3C guidelines.</div></div>
+      <div class="hci-law-row"><span class="hci-law-tag">Law of Learning</span><div class="hci-law-desc"><strong>Onboarding splash</strong> explains app identity. First-time hints on OTP screen. FAQ in Help covers all common operations. Consistent placement means users quickly memorize navigation paths.</div></div>
+      <div class="hci-law-row"><span class="hci-law-tag">Aesthetic Usability</span><div class="hci-law-desc"><strong>Gradient hero sections</strong> appear more premium and trustworthy. Card shadows add depth. Indian tricolor strip on splash communicates legitimacy. Professional blue/white palette increases perceived reliability.</div></div>
+      <div class="hci-law-row"><span class="hci-law-tag">Principle of Least Effort</span><div class="hci-law-desc"><strong>Download accessible in 2 taps</strong> from dashboard. Address update pre-fills known data. Biometric login skips all manual entry. Search in Services avoids scrolling. Most-used section avoids hunting.</div></div>
+      <div class="hci-law-row"><span class="hci-law-tag">Mental Models</span><div class="hci-law-desc"><strong>Aadhaar card widget</strong> resembles physical Aadhaar card with masked number. Document upload resembles file picker. Step wizard resembles form filling at service centre. Users map digital → physical experience.</div></div>
+    </div>
+  </div>
+
+  <!-- DEMO CONTROLS -->
+  <div class="demo-controls">
+    <div class="demo-label">Navigate Screens</div>
+    <span class="demo-btn" onclick="showScreen('splash')">🏠 Splash</span>
+    <span class="demo-btn" onclick="showScreen('login')">🔐 Login</span>
+    <span class="demo-btn" onclick="showScreen('home')">📊 Home</span>
+    <span class="demo-btn" onclick="showScreen('profile')">👤 Profile</span>
+    <span class="demo-btn" onclick="showScreen('services')">⚡ Services</span>
+    <span class="demo-btn" onclick="showScreen('update')">📍 Update</span>
+    <span class="demo-btn" onclick="showScreen('download')">📥 Download</span>
+    <span class="demo-btn" onclick="showScreen('history')">🕐 History</span>
+    <span class="demo-btn" onclick="showScreen('help')">❓ Help</span>
+    <span class="demo-btn" onclick="showScreen('settings')">⚙️ Settings</span>
+    <br>
+    <span class="demo-btn" style="background:rgba(255,107,0,0.2);border-color:rgba(255,107,0,0.4);color:#FF8C2A;" onclick="document.getElementById('hci-overlay').classList.add('show')">🧠 View HCI Law Mapping</span>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   APP STATE & NAVIGATION
+   ============================================================ */
+const screensWithNav = ['home','profile','services','help'];
+const screensWithoutNav = ['splash','login','update','download','history','settings'];
+
+function showScreen(name, navBtn) {
+  // Hide all screens
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  // Show target
+  const target = document.getElementById('screen-' + name);
+  if (target) target.classList.add('active');
+
+  // Show/hide bottom nav
+  const nav = document.getElementById('bottom-nav');
+  if (screensWithNav.includes(name)) {
+    nav.style.display = 'flex';
+    // Update active nav item
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.classList.toggle('active', item.dataset.screen === name);
+    });
+  } else {
+    nav.style.display = name === 'splash' || name === 'login' ? 'none' : 'none';
+    if (screensWithNav.includes(name)) nav.style.display = 'flex';
+    else nav.style.display = 'none';
+  }
+
+  // Override for main nav screens
+  if (['home','profile','services','help'].includes(name)) {
+    nav.style.display = 'flex';
+  }
+}
+
+/* ============================================================
+   TOAST — Immediate Feedback (Shneiderman Rule 3)
+   ============================================================ */
+let toastTimeout;
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = '';
+  if (type === 'success') t.textContent = '✅ ' + msg;
+  else if (type === 'error') t.textContent = '❌ ' + msg;
+  else t.textContent = 'ℹ️ ' + msg;
+  t.className = 'toast show ' + (type || '');
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+/* ============================================================
+   PASSWORD MASKING — Norman Visibility + W3C Guideline
+   ============================================================ */
+function toggleMask(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    input.type = 'password';
+    btn.textContent = '👁';
+  }
+}
+
+/* ============================================================
+   TOGGLE SWITCH — Feedback + User Control
+   ============================================================ */
+function toggleSwitch(el, onMsg, offMsg) {
+  el.classList.toggle('on');
+  const thumb = el.querySelector('.toggle-thumb');
+  showToast(el.classList.contains('on') ? onMsg : offMsg, el.classList.contains('on') ? 'success' : 'info');
+}
+
+/* ============================================================
+   FILTER CHIPS — Hick's Law
+   ============================================================ */
+function setChip(el, val) {
+  const parent = el.parentElement;
+  parent.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+/* ============================================================
+   DOWNLOAD OPTION SELECTOR
+   ============================================================ */
+function selectDownloadOption(el) {
+  document.querySelectorAll('.download-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+/* ============================================================
+   FAQ ACCORDION — Gestalt Continuity + Closure
+   ============================================================ */
+function toggleFAQ(item) {
+  const wasOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+  if (!wasOpen) item.classList.add('open');
+}
+
+/* ============================================================
+   LANGUAGE SELECTOR — Universal Design
+   ============================================================ */
+function setLang(btn, lang) {
+  btn.closest('.lang-grid').querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  showToast('Language set to ' + lang, 'success');
+}
+
+/* ============================================================
+   SIMULATE OTP — Feedback
+   ============================================================ */
+function simulateOTP() {
+  const mobile = document.getElementById('login-mobile');
+  if (mobile && mobile.value.length < 10) {
+    showToast('Please enter a valid 10-digit mobile number', 'error');
+    return;
+  }
+  showToast('OTP sent to +91 ' + (mobile ? mobile.value : '98765XXXXX'), 'success');
+  setTimeout(() => showScreen('home'), 1200);
+}
+
+/* ============================================================
+   SIMULATE DOWNLOAD
+   ============================================================ */
+function simulateDownload() {
+  showToast('OTP sent. Verify to download e-Aadhaar…', 'info');
+  setTimeout(() => showToast('e-Aadhaar PDF downloaded successfully!', 'success'), 2000);
+}
+
+/* ============================================================
+   PIN VALIDATION — Norman Constraints + Error Prevention
+   ============================================================ */
+function validatePIN(input) {
+  input.value = input.value.replace(/\D/g, '').slice(0, 6);
+  if (input.value.length === 6) {
+    input.style.borderColor = 'var(--green-500)';
+  } else {
+    input.style.borderColor = '';
+  }
+}
+
+/* ============================================================
+   INIT — Start on splash
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  // Add toggle thumb to all toggle-switch buttons
+  document.querySelectorAll('.toggle-switch').forEach(sw => {
+    if (!sw.querySelector('.toggle-thumb')) {
+      const thumb = document.createElement('div');
+      thumb.className = 'toggle-thumb';
+      sw.appendChild(thumb);
+    }
+  });
+  showScreen('splash');
+  // Auto-advance splash after 2.5s
+  setTimeout(() => {
+    if (document.getElementById('screen-splash').classList.contains('active')) {
+      // stay on splash, let user tap
+    }
+  }, 2500);
+});
+</script>
+</body>
+</html>
